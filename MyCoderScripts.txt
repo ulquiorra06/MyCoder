@@ -52,7 +52,7 @@ CREATE TABLE Project
 	[ProjectName] VARCHAR(50)  UNIQUE NOT NULL,
 	[ProjDescription] VARCHAR(500) NOT NULL,
 	[BuyerId] TINYINT  REFERENCES Buyer(BuyerId),
-	[LanguageProficiency] VARCHAR(50)  NOT NULL,
+	[TechnicalDescription] VARCHAR(50)  NOT NULL,
 	[Duration] TIMESPAN NOT NULL,
 	[Status] VARCHAR(15) NOT NULL
 )
@@ -75,6 +75,7 @@ CREATE TABLE Coder
 	[UserID] TINYINT REFERENCES Users(UserId),
 	[ProjectId] CHAR(4) REFERENCES ProjectDescription(ProjectId),
 	[BuyerId] TINYINT  REFERENCES Buyer(BuyerId),
+	[PhoneNumber] NUMERIC(10),
 	[LanguageProficiency] VARCHAR(50)  NOT NULL,
 	[Country] VARCHAR(50) NOT NULL
 	
@@ -140,6 +141,9 @@ begin
 	set @rating=(@count*@rating+@new_rating)/(@count+1)
 	update Rating set rating=@rating,NoOfRatings=@count+1 where Ratingid=@coder_id
 end
+
+
+
 
 
 
