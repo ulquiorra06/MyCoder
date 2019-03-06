@@ -1,0 +1,522 @@
+using Infosys.MyCoder.DataAccessLayer.Models;
+using System;
+using System.Collections.Generic;
+using System.Text;
+using System.Linq;
+using Microsoft.EntityFrameworkCore;
+
+namespace Infosys.MyCoder.DataAccessLayer
+{
+    public class MyCoderRepository
+    {
+        MyCoderDBContext context;
+        public MyCoderRepository()
+        {
+            context = new MyCoderDBContext();
+        }
+
+        public List<String> GetTopCodersWithMaxBuyers()
+        {
+            List<String> coderList = null;
+
+            try
+            {
+                coderList = (from c in context.Coder
+                             join a in context.Auction on c.CoderId equals a.CoderId
+                             orderby a.NoOfBuyers descending
+                             select c.CoderName).Take(10).ToList();
+
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+
+
+            return coderList;
+        }
+
+        public List<String> GetTopCodersWithMaxProj(int year)
+        {
+            List<String> coderList = null;
+            
+            try
+            {
+                coderList = (from c in context.Coder
+                             join pd in context.ProjectDetails on c.CoderId equals pd.CoderId
+                             join p in context.Project on pd.ProjectId equals p.ProjectId
+                             where (p.Duration).Year ==year && p.Status=="Completed"
+                             group pd by   
+                             pd.CoderId
+                             into g
+                             orderby g.Count() descending
+                             from x in g
+                             select x.CoderName).Take(10).Distinct().ToList();
+                
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+
+
+            return coderList;
+        }
+
+        public int GetNumCodersPerProject(int projId)
+        {
+            int value = 0;
+
+            try
+            {
+                value = (from c in context.Enroll
+                         where c.ProjectId == projId
+                         select c.ProjectId).Count();
+
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+            return value;
+        }
+
+        public bool EnrollCoder(int projectId, string projectName, int coderId)
+        {
+            bool status = false;
+            Enroll enroll = new Enroll();
+            enroll.ProjectId = projectId;
+            enroll.ProjectName = projectName;
+            enroll.CoderId = coderId;
+            try
+            {
+                context.Enroll.Add(enroll);
+
+                context.SaveChanges();
+                status = true;
+            }
+            catch (Exception ex)
+            {
+                status = false;
+            }
+            return status;
+        }
+        public int? GetNoOfBuyers(int userid)  
+        {
+            int? n = null;
+            try
+            {
+                n = (from auction in context.Auction where auction.Coder.Equals(userid) select auction.NoOfBuyers).LastOrDefault();
+            }
+            catch (Exception ex)
+            {
+                n = null;
+            }
+            return n;
+        }
+
+        public bool ProjectFeedback(int projectId, string projectName, int coderId, string feedback)
+        {
+            bool status = false;
+            ProjectFeedback projFeedback = new ProjectFeedback();
+            projFeedback.ProjectId = projectId;
+            projFeedback.ProjectName = projectName;
+            projFeedback.CoderId = coderId;
+            projFeedback.Feedback = feedback;
+            try
+            {
+                context.ProjectFeedback.Add(projFeedback);
+
+                context.SaveChanges();
+                status = true;
+            }
+            catch (Exception ex)
+            {
+                status = false;
+            }
+            return status;
+        }
+
+
+        public List<Project> GetProjects()
+        {
+            List<Project> projectList = null;
+
+            try
+            {
+                projectList = (from c in context.Project
+                               orderby c.ProjectId
+                               select c).ToList();
+
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+
+
+            return projectList;
+        }
+        public List<Coder> GetTopCoders()
+        {
+            List<Coder> topCoders = null;
+            try
+            {
+                topCoders = (from coders in context.Coder
+                             join rate in context.Rating on coders.UserId equals rate.UserId
+                             orderby rate.Ratings descending
+                             select coders).Take(10).ToList();
+
+            }
+            catch (Exception e)
+            {
+                topCoders = null;
+            }
+            return topCoders;
+        }
+        public bool Giverating(int rating, int user_id)
+        {
+            bool status = false;
+            try
+            {
+                context.Database.ExecuteSqlCommand("EXECUTE dbo.usp_calculate_rating @p0, @p1", parameters: 
+                    new[] { rating.ToString(), user_id.ToString() });
+                status = true;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+                status = false;
+            }
+            return status;
+        }
+        public bool UpdateBuyerDetail(Buyer buyer)
+        {
+            bool status = false;
+            Buyer buyers = context.Buyer.Find(buyer.BuyerId);
+            try
+            {
+                if (buyers != null)
+                {
+                    buyers.BuyerName = buyer.BuyerName;
+                    buyers.PhoneNumber = buyer.PhoneNumber;
+                    buyers.Country = buyer.Country;
+                    buyers.Exchange = buyer.Exchange;
+                    context.SaveChanges();
+                    status = true;
+                }
+                else
+                {
+                    status = false;
+                }
+            }
+            catch (Exception)
+            {
+                status = false;
+            }
+            return status;
+        }
+        public bool UpdateCoderDetail(Coder coder)
+        {
+            bool status = false;
+            Coder coders = context.Coder.Find(coder.CoderId);
+            try
+            {
+                if (coders != null)
+                {
+                    coders.CoderName = coder.CoderName;
+                    coders.PhoneNumber = coder.PhoneNumber;
+                    coders.Country = coder.Country;
+                    coders.LanguageProficiency = coder.LanguageProficiency;
+                    context.SaveChanges();
+                    status = true;
+                }
+                else
+                {
+                    status = false;
+                }
+            }
+            catch (Exception)
+            {
+                status = false;
+            }
+            return status;
+        }
+
+        public bool AddPayment(int projectId, int payeeId, int payerId, DateTime dateOfPayment)
+        {
+            bool status = false;
+            PaymentDetails payment = new PaymentDetails();
+            payment.ProjectId = projectId;
+            payment.PayeeId = payeeId;
+            payment.PayerId = payerId;
+            payment.DateOfPayment = dateOfPayment;
+            try
+            {
+               
+                context.Add<PaymentDetails>(payment);
+                context.SaveChanges();
+                status = true;
+            }
+            catch (Exception)
+            {
+                status = false;
+            }
+            return status;
+        }
+        public bool AddFeedback(int fromUserId, int toUserId, string feedback)
+        {
+            bool status = false;
+            UserFeedback userfeedback = new UserFeedback();
+            userfeedback.FromUserId = fromUserId;
+            userfeedback.ToUserId = toUserId;
+            userfeedback.FeedBackOfUser = feedback;
+            try
+            {
+                
+                context.Add<UserFeedback>(userfeedback);
+                context.SaveChanges();
+                status = true;
+            }
+            catch (Exception)
+            {
+                status = false;
+            }
+            return status;
+        }
+        public List<UserFeedback> GetUserFeedback(int userId)
+        {
+            List<UserFeedback> lstUserFeedback = null;
+            try
+            {
+                lstUserFeedback = context.UserFeedback.Where(p => p.ToUserId == userId).ToList();
+            }
+            catch (Exception ex)
+            {
+                lstUserFeedback = null;
+            }
+            return lstUserFeedback;
+        }
+
+        public bool ExchangeCoder(int buyerId, int coderId, int projectId)
+        {
+            bool status = false;
+            Coder coder = context.Coder.Find(coderId);
+            ProjectDetails projectDetails = new ProjectDetails();
+            projectDetails.ProjectId = projectId;
+            projectDetails.CoderId = coderId;
+            try
+            {
+                if (coder != null)
+                {
+                    coder.ProjectId = projectId;
+                    coder.BuyerId = buyerId;
+                    context.Add<ProjectDetails>(projectDetails);
+                    context.SaveChanges();
+                    status = true;
+                    if (status == true)
+                    {
+                        Buyer buyer = context.Buyer.Find(buyerId);
+                        buyer.Exchange = null;
+                        context.SaveChanges();
+                    }
+                }
+                else
+                {
+                    status = false;
+                }
+            }
+            catch (Exception)
+            {
+                status = false;
+            }
+            return status;
+        }
+        public List<Coder> GetTopCodersWithHighBidValue()
+        {
+            List<Coder> coderList = null;
+            try
+            {
+                coderList = (from coders in context.Coder
+                             join auction in context.Auction on coders.CoderId equals auction.CoderId
+                             orderby auction.FinalPrice descending
+                             select coders).Take(4).ToList();
+            }
+            catch (Exception ex)
+            {
+                coderList = null;
+            }
+            return coderList;
+        }
+
+        
+
+        public bool UpdateBiddingAmount(int auctionid)
+        {
+            bool status = false;
+            Auction auction = context.Auction.Find(auctionid);
+            try
+            {
+                auction.FinalPrice += 500;
+                context.SaveChanges();
+                status = true;
+            }
+            catch (Exception)
+            {
+                status = false;
+            }
+            return status;
+        }
+
+        public bool deletebuyer()
+        {
+            bool status = false;
+            List<Rating> rate = null;
+            try
+            {
+                rate = context.Rating.Where(r => r.Ratings < 4).ToList();
+                foreach (var item in rate)
+                {
+                    if (item != null)
+                    {
+                        context.Rating.Remove(item);
+                        context.SaveChanges();
+                        status = true;
+                    }
+                    else
+                    {
+                        status = false;
+                    }
+                    Users deactivate = context.Users.Find(item.UserId);
+                    if (deactivate != null)
+                    {
+                        Buyer bDelete = context.Buyer.Where(b => b.UserId == item.UserId).FirstOrDefault();
+                        if (bDelete != null)
+                        {
+                            Project pUpdate = context.Project.Where(p => p.BuyerId == bDelete.BuyerId).FirstOrDefault();
+                            if (pUpdate != null)
+                            {
+                                pUpdate.BuyerId = null;
+                                context.SaveChanges();
+                                status = true;
+                            }
+                            List<Coder> cUpdate = context.Coder.Where(c => c.BuyerId == bDelete.BuyerId).ToList();
+                            foreach (var item1 in cUpdate)
+                            {
+                                if (item1 != null)
+                                {
+                                    item1.BuyerId = null;
+                                    context.SaveChanges();
+                                    status = true;
+                                }
+                            }
+                            context.Buyer.Remove(bDelete);
+                            context.SaveChanges();
+                            status = true;
+                        }
+                        deactivate.AccountStatus = 0;
+                        context.SaveChanges();
+                        status = true;
+                    }
+                    else
+                    {
+                        status = false;
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+                status = false;
+            }
+            return status;
+        }
+
+        public bool deletecoder()
+        {
+            bool status = false;
+            List<Rating> rate = null;
+            try
+            {
+                rate = context.Rating.Where(r => r.Ratings < 4).ToList();
+                foreach (var item in rate)
+                {
+                    if (item != null)
+                    {
+                        context.Rating.Remove(item);
+                        context.SaveChanges();
+                        status = true;
+                    }
+                    else
+                    {
+                        status = false;
+                    }
+                    Coder cdelete = context.Coder.Where(c => c.UserId == item.UserId).FirstOrDefault();
+                    if (cdelete != null)
+                    {
+                        ProjectFeedback feeddelete = context.ProjectFeedback.Where(p => p.CoderId == cdelete.CoderId).FirstOrDefault();
+                        if (feeddelete != null)
+                            context.ProjectFeedback.Remove(feeddelete);
+                        List<Enroll> enrolldelete = context.Enroll.Where(e => e.CoderId == cdelete.CoderId).ToList();
+                        if (enrolldelete != null)
+                            context.Enroll.RemoveRange(enrolldelete);
+
+                        context.Coder.Remove(cdelete);
+                        context.SaveChanges();
+                    }
+                    Users deactivate = context.Users.Find(item.UserId);
+                    if (deactivate != null)
+                    {
+                        deactivate.AccountStatus = 0;
+                        context.SaveChanges();
+                        status = true;
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+                status = false;
+            }
+            return status;
+        }
+        public List<Coder> GetTopCodersWithLowBidValue()
+        {
+            var coderList = (from coders in context.Coder
+                             join auction in context.Auction on coders.CoderId equals auction.CoderId
+                             orderby auction.FinalPrice ascending
+                             select coders).Take(10).ToList();
+            return coderList;
+        }
+
+
+
+        public bool UpdateBidByNegotiation(int CoderId, int newPrice)
+        {
+            bool status = false;
+            Auction auct = context.Auction
+                             .Where(x => x.CoderId == CoderId)
+                             .FirstOrDefault();
+            try
+            {
+                if (auct != null)
+                {
+                    auct.FinalPrice = newPrice;
+                    context.SaveChanges();
+                    status = true;
+                }
+                else
+                {
+                    status = false;
+                }
+            }
+            catch (Exception)
+            {
+                status = false;
+            }
+            return status;
+        }
+
+    }
+}
+

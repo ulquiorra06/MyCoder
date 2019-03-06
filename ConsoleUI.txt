@@ -1,0 +1,185 @@
+
+using System;
+using System.Collections.Generic;
+using Infosys.MyCoder.DataAccessLayer;
+using Infosys.MyCoder.DataAccessLayer.Models;
+
+namespace Infosys.MyCoderConsoleUI
+{
+    class Program
+    {
+        static void Main(string[] args)
+        {
+            MyCoderRepository repository = new MyCoderRepository();
+            var coderList = repository.GetTopCodersWithMaxBuyers();
+            var codersList = repository.GetTopCodersWithMaxProj(2019);
+            var projList = repository.GetProjects();
+            var value = repository.GetNumCodersPerProject(102);
+
+            foreach (var val in projList)
+            {
+                Console.WriteLine("{0}\t{1}\t{2}\t{3}{4}\t{5}\t{6}", val.ProjectId, val.ProjectName, val.ProjDescription, val.BuyerId, val.TechnicalDescription, val.Duration, val.Status);
+            }
+            Console.WriteLine(value);
+            bool result = repository.EnrollCoder(102, "CureWell", 5);
+            if (result)
+            {
+                Console.WriteLine("New coder added successfully");
+            }
+            else
+            {
+                Console.WriteLine("Something went wrong. Try again!");
+            }
+            Console.WriteLine(value);
+            bool result1 = repository.ProjectFeedback(102, "CureWell", 5, "good");
+            if (result1)
+            {
+                Console.WriteLine("New feedback added successfully");
+            }
+            else
+            {
+                Console.WriteLine("Something went wrong. Try again!");
+            }
+
+            foreach (var val in codersList)
+            {
+                Console.WriteLine(val);
+                //Console.WriteLine("{0}\t{1}\t{2}\t{3}{4}\t{5}\t{6}", val.ProjectId, val.ProjectName, val.ProjDescription, val.BuyerId, val.TechnicalDescription, val.Duration, val.Status);
+            }
+
+            #region top coders by rating
+            var topCoders = repository.GetTopCoders();
+            foreach (var item in topCoders)
+                Console.WriteLine("{0,-5}{1,-15}{2,-15}{3,-15}", item.CoderId, item.CoderName, item.LanguageProficiency, item.Country);
+            #endregion
+
+            #region rating users
+            bool status = repository.Giverating(6, 7);
+            Console.WriteLine(status);
+            #endregion
+
+            #region updatebuyer
+            Buyer buyer = new Buyer();
+            buyer.BuyerName = "Pranesh";
+            buyer.PhoneNumber = 7894585246;
+            buyer.Country = "Singapore";
+ 
+            buyer.BuyerId = 3;
+
+            bool status1 = repository.UpdateBuyerDetail(buyer);
+            Console.WriteLine(status1);
+            #endregion
+
+            #region updatecoder
+            Coder coder = new Coder();
+            coder.CoderName = "Karthikeyan";
+            coder.PhoneNumber = 7894585246;
+            coder.Country = "Singapore";
+            coder.CoderId = 1;
+            coder.LanguageProficiency = "c#";
+            bool status2 = repository.UpdateCoderDetail(coder);
+            Console.WriteLine(status2);
+            #endregion
+
+            #region delete buyer
+            bool status3 = repository.deletebuyer();
+            Console.WriteLine(status3);
+            #endregion
+
+            #region delete coder
+            bool status4 = repository.deletecoder();
+            Console.WriteLine(status4);
+            #endregion
+
+            #region update bidding amount
+            bool result2 = repository.UpdateBiddingAmount(1);
+            Console.WriteLine(result2);
+            #endregion
+
+            bool result3 = repository.UpdateBidByNegotiation(4, 42000);
+            if (result3)
+            {
+                Console.WriteLine("Bid details updated successfully");
+            }
+            else
+            {
+                Console.WriteLine("Something went wrong. Try again!");
+            }
+
+            //            //MyCoderRepository repository = new MyCoderRepository();
+
+            //            //var lstcoders = repository.GetTopCodersMaxProjectPerYear(2019);
+            //            //foreach(var val in lstcoders)
+            //            //{
+            //            //    Console.WriteLine(val);
+            //            //}
+
+            //            //testPaymentDetails();
+            //testUserFeedback();
+            //testFeedbackReport();
+            testExchangecoder();
+        }
+        public static void testPaymentDetails()
+        {
+            MyCoderRepository repository = new MyCoderRepository();
+
+            bool result = repository.AddPayment(102, 11, 3, new DateTime(2019, 02, 06, 12, 00, 00));
+            if (result)
+            {
+                Console.WriteLine("New payment added successfully");
+            }
+            else
+            {
+                Console.WriteLine("Something went wrong. Try again!");
+            }
+        }
+        public static void testUserFeedback()
+        {
+            MyCoderRepository repository = new MyCoderRepository();
+
+            bool result = repository.AddFeedback(5, 2, "good");
+            if (result)
+            {
+                Console.WriteLine("New feedback added successfully");
+            }
+            else
+            {
+                Console.WriteLine("Something went wrong. Try again!");
+            }
+        }
+        public static void testFeedbackReport()
+        {
+            MyCoderRepository repository = new MyCoderRepository();
+
+            List<UserFeedback> lstuserfeedback = repository.GetUserFeedback(7);
+            if (lstuserfeedback.Count == 0)
+            {
+                Console.WriteLine("No Feedback available under the category ");
+            }
+            else
+            {
+                Console.WriteLine("{0,-15}{1,-30}", "FromUserId", "Feedback");
+                Console.WriteLine("---------------------------------------------------------------------------------------");
+                foreach (var feedback in lstuserfeedback)
+                {
+                    Console.WriteLine("{0,-15}{1,-30}", feedback.FromUserId, feedback.FeedBackOfUser);
+                }
+            }
+        }
+        public static void testExchangecoder()
+        {
+            MyCoderRepository repository = new MyCoderRepository();
+            bool result = repository.ExchangeCoder(2, 3, 101);
+            if (result)
+            {
+                Console.WriteLine("coder is exchanged amd projectdetail is added successfully");
+            }
+            else
+            {
+                Console.WriteLine("Something went wrong. Try again!");
+            }
+        }
+    }
+    }
+    
+
